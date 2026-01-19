@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cinema Collection (Login + API + App)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    * { box-sizing: border-box; margin:0; padding:0; }
+    body {
+      font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background: radial-gradient(circle at top, #2a1644, #05000a);
+      color:#fff;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+
+
+    /* Animated background */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: 
+        radial-gradient(circle at 20% 50%, rgba(220, 38, 38, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(234, 179, 8, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 40% 20%, rgba(168, 85, 247, 0.1) 0%, transparent 50%);
+      animation: bgShift 20s ease infinite;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .screen {
+      width:100%;
+      max-width:900px;
+      background:#05000fdd;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,0.12);
+      box-shadow:0 20px 60px rgba(0,0,0,0.7);
+      padding:24px 24px 20px;
+      display:none;
+    }
+    .screen.active { display:block; }
+
+    h1 {
+      text-align:center;
+      font-size:2rem;
+      margin-bottom:4px;
+      background:linear-gradient(45deg,#ffd700,#ff6b6b);
+      -webkit-background-clip:text;
+      color:transparent;
+    }
+    .subtitle {
+      text-align:center;
+      font-size:.9rem;
+      color:rgba(255,255,255,.75);
+      margin-bottom:18px;
+    }
+
+    /* LOGIN SCREEN */
+    .columns {
+      display:flex;
+      gap:18px;
+      flex-wrap:wrap;
+    }
+    .card {
+      flex:1;
+      min-width:260px;
+      background:rgba(255,255,255,.03);
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.08);
+      padding:14px 14px 16px;
+    }
+    .card h2 {
+      font-size:1rem;
+      color:#ffd700;
+      margin-bottom:10px;
+    }
+    label {
+      font-size:.85rem;
+      color:#ffd700;
+      display:block;
+      margin-bottom:6px;
+      margin-top:8px;
+    }
+    input[type="text"],
+    input[type="password"] {
+      width:100%;
+      padding:9px 10px;
+      border-radius:10px;
+      border:2px solid rgba(255,215,0,.3);
+      background:#080010;
+      color:#fff;
+      font-size:.9rem;
+    }
+    input:focus {
+      outline:none;
+      border-color:#ffd700;
+    }
+
+    .btn {
+      margin-top:10px;
+      width:100%;
+      border:none;
+      border-radius:999px;
+      padding:9px 14px;
+      font-size:.95rem;
+      font-weight:600;
+      cursor:pointer;
+      background:linear-gradient(135deg,#ffd700,#ff6b6b);
+      color:#000;
+      transition:transform .15s, box-shadow .15s;
+    }
+    .btn:hover {
+      transform:translateY(-1px);
+      box-shadow:0 8px 24px rgba(255,215,0,.45);
+    }
+
+    .error {
+      margin-top:10px;
+      font-size:.8rem;
+      padding:8px 10px;
+      border-radius:8px;
+      display:none;
+    }
+    .error.neg {
+      background:rgba(248,113,113,.2);
+      border:1px solid #f87171;
+      color:#fecaca;
+    }
+    .error.pos {
+      background:rgba(34,197,94,.2);
+      border:1px solid #22c55e;
+      color:#bbf7d0;
+    }
+
+    /* password + eye + strength */
+    .pw-wrap {
+      position:relative;
+    }
+    .pw-wrap input {
+      padding-right:34px;
+    }
+    .pw-toggle {
+      position:absolute;
+      right:6px;
+      top:50%;
+      transform:translateY(-50%);
+      width:22px;
+      height:22px;
+      border-radius:999px;
+      border:none;
+      background:transparent;
+      color:#ffd700;
+      font-size:.9rem;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+    }
+    .pw-toggle:hover { background:rgba(255,255,255,.1); }
+
+    .strength-track {
+      height:6px;
+      border-radius:999px;
+      background:rgba(255,255,255,.12);
+      margin-top:6px;
+      overflow:hidden;
+    }
+    .strength-fill {
+      height:100%;
+      width:0%;
+      background:#ef4444;
+      transition:width .18s;
+    }
+    .strength-weak   { background:#ef4444; }
+    .strength-medium { background:#f97316; }
+    .strength-strong { background:#22c55e; }
+
+    .hint {
+      font-size:.75rem;
+      color:rgba(255,255,255,.7);
+      margin-top:4px;
+    }
+
+    /* API screen */
+    .info-box {
+      background:rgba(250,204,21,.08);
+      border-radius:10px;
+      border:1px solid rgba(250,204,21,.5);
+      padding:12px;
+      font-size:.85rem;
+      margin-bottom:16px;
+    }
+    .info-box a { color:#facc15; }
+
+    /* APP */
+    .top-bar {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      margin-bottom:20px;
+    }
+    .logout-small {
+      width:auto;
+      padding:6px 12px;
+      font-size:.8rem;
+      border-radius:999px;
+      border:1px solid #f87171;
+      background:rgba(248,113,113,.15);
+      color:#fecaca;
+    }
+    .search-row {
+      display:flex;
+      gap:8px;
+      margin-bottom:14px;
+    }
+    .search-row input {
+      flex:1;
+    }
+    .search-button {
+      width:40px;
+      border-radius:999px;
+      padding:0;
+      font-size:1.2rem;
+    }
+    .preview {
+      display:none;
+      margin-bottom:16px;
+      padding:12px;
+      border-radius:10px;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.1);
+    }
+    .preview-inner {
+      display:flex;
+      gap:14px;
+    }
+    .preview-img {
+      width:120px;
+      height:180px;
+      border-radius:8px;
+      object-fit:cover;
+      background:#333;
+    }
+    .preview h3 { margin-bottom:4px; color:#ffd700; }
+    .small-text { font-size:.85rem; color:rgba(255,255,255,.8); }
+
+    .filters {
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin:16px 0;
+      font-size:.85rem;
+    }
+    select {
+      padding:6px 8px;
+      border-radius:8px;
+      border:1px solid rgba(255,215,0,.3);
+      background:#05000f;
+      color:#fff;
+    }
+    .grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+      gap:16px;
+    }
+    .item {
+      background:rgba(255,255,255,.04);
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.1);
+      overflow:hidden;
+    }
+    .item-img {
+      width:100%;
+      height:260px;
+      object-fit:cover;
+      background:#222;
+    }
+    .item-body { padding:10px 12px 12px; }
+    .tag {
+      display:inline-block;
+      font-size:.7rem;
+      padding:2px 8px;
+      border-radius:999px;
+      margin-bottom:4px;
+      background:#ffd700;
+      color:#000;
+      font-weight:600;
+    }
+    .tag.series { background:#fb7185; color:#fff; }
+    .title { font-size:1rem; font-weight:600; margin-bottom:4px; }
+    .meta { font-size:.8rem; color:rgba(255,255,255,.8); }
+    .rating {
+      display:inline-block;
+      margin-top:4px;
+      font-size:.8rem;
+      padding:2px 8px;
+      border-radius:999px;
+      background:linear-gradient(135deg,#ffd700,#fb7185);
+      color:#000;
+      font-weight:600;
+    }
+    .del-btn {
+      margin-top:6px;
+      width:100%;
+      padding:6px;
+      border-radius:8px;
+      border:1px solid #f87171;
+      background:rgba(248,113,113,.16);
+      color:#fecaca;
+      font-size:.8rem;
+      cursor:pointer;
+    }
+    .del-btn:hover { background:rgba(248,113,113,.28); }
+
+    .empty {
+      text-align:center;
+      padding:30px 0;
+      font-size:.9rem;
+      color:rgba(255,255,255,.7);
+    }
+
+    @media (max-width:640px){
+      .preview-inner { flex-direction:column; align-items:center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SCREEN 1: LOGIN / REGISTER -->
+  <div class="screen active" id="loginScreen">
+    <h1>🎟️ Cinema Login</h1>
+    <p class="subtitle">Create an account or login if you have one</p>
+
+    <div class="columns">
+      <!-- Register -->
+      <div class="card">
+        <h2>Register</h2>
+        <label for="regUser">Username</label>
+        <input id="regUser" type="text" placeholder="e.g. saad" />
+
+        <label for="regPass">Password</label>
+        <div class="pw-wrap">
+          <input id="regPass" type="password" placeholder="Strong password" />
+          <button type="button" class="pw-toggle" id="pwToggle">👁️</button>
+        </div>
+        <div class="strength-track">
+          <div id="strengthFill" class="strength-fill"></div>
+        </div>
+        <div class="hint">
+          Must have: uppercase, lowercase, number, symbol, and length ≥ 8.
+        </div>
+
+        <button class="btn" id="registerBtn">Create Account</button>
+      </div>
+
+      <!-- Login -->
+      <div class="card">
+        <h2>Login</h2>
+        <label for="loginUser">Username</label>
+        <input id="loginUser" type="text" placeholder="Your username" />
+        <label for="loginPass">Password</label>
+        <input id="loginPass" type="password" placeholder="Your password" />
+
+        <button class="btn" id="loginBtn">Login</button>
+      </div>
+    </div>
+
+    <div id="loginMsg" class="error neg"></div>
+  </div>
+
+
+  <!-- SCREEN 2: API KEY -->
+  <div class="screen" id="apiScreen">
+    <h1>🔑 OMDb API Key</h1>
+    <p class="subtitle">set your API key once, then go to your cinema collection.</p>
+
+    <div class="info-box">
+      1️⃣ Get a free key from <a href="https://www.omdbapi.com/apikey.aspx" target="_blank">omdbapi.com</a><br /> 
+      2️⃣ Activate it from your email<br />
+      3️⃣ Paste the key here (we store it in localStorage for this project)
+    </div>
+
+    <label for="apiKeyInput">API Key</label>
+    <input id="apiKeyInput" type="text" placeholder="e.g. 1234abcd" />
+    <button class="btn" id="apiSaveBtn">Verify & Continue</button>
+
+    <div id="apiMsg" class="error neg"></div>
+  </div>
+
+  <!-- SCREEN 3: CINEMA APP -->
+  <div class="screen" id="appScreen">
+    <div class="top-bar">
+      <div>
+        <h1 style="font-size:1.4rem;margin-bottom:0;">🎬 My Cinema Collection</h1>
+        <p class="subtitle" style="margin-bottom:0;font-size:.8rem;">
+	Your personal movie & TV show library
+
+        </p>
+      </div>
+      <button class="logout-small" id="logoutBtn">Logout (back to login)</button>
+    </div>
+
+    <label for="searchInput">Search movie / TV show</label>
+    <div class="search-row">
+      <input id="searchInput" type="text" placeholder="e.g. Inception, Breaking Bad" />
+      <button class="btn search-button" id="searchBtn">🔍</button>
+    </div>
+    <div id="searchMsg" class="error neg"></div>
+
+    <div class="preview" id="previewBox">
+      <div class="preview-inner">
+        <img id="prevImg" class="preview-img" alt="Poster" />
+        <div>
+          <h3 id="prevTitle"></h3>
+          <p class="small-text" id="prevMeta"></p>
+          <p class="small-text" id="prevPlot"></p>
+          <button class="btn" id="addBtn" style="margin-top:10px;">Add to my collection</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="filters">
+      <div>
+        <span>Filter:</span>
+        <select id="filterType">
+          <option value="all">All</option>
+          <option value="movie">Movies</option>
+          <option value="series">TV shows</option>
+        </select>
+      </div>
+      <div>
+        <span>Sort:</span>
+        <select id="sortBy">
+          <option value="title">Title</option>
+          <option value="rating">IMDb rating</option>
+          <option value="date">Release date</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="itemsGrid" class="grid"></div>
+  </div>
+
+<script>
+  // ============ STORAGE HELPERS ============
+  function loadUsers() {
+    const raw = localStorage.getItem("ws_users");
+    return raw ? JSON.parse(raw) : [];
+  }
+  function saveUsers(users) {
+    localStorage.setItem("ws_users", JSON.stringify(users));
+  }
+  function setCurrentUser(u) {
+    localStorage.setItem("ws_current_user", u);
+  }
+  function getCurrentUser() {
+    return localStorage.getItem("ws_current_user");
+  }
+
+  // ============ ELEMENTS ============
+  const loginScreen = document.getElementById("loginScreen");
+  const apiScreen   = document.getElementById("apiScreen");
+  const appScreen   = document.getElementById("appScreen");
+
+  const regUser  = document.getElementById("regUser");
+  const regPass  = document.getElementById("regPass");
+  const pwToggle = document.getElementById("pwToggle");
+  const strengthFill = document.getElementById("strengthFill");
+  const registerBtn  = document.getElementById("registerBtn");
+
+  const loginUser = document.getElementById("loginUser");
+  const loginPass = document.getElementById("loginPass");
+  const loginBtn  = document.getElementById("loginBtn");
+  const loginMsg  = document.getElementById("loginMsg");
+
+  const apiKeyInput = document.getElementById("apiKeyInput");
+  const apiSaveBtn  = document.getElementById("apiSaveBtn");
+  const apiMsg      = document.getElementById("apiMsg");
+
+  const logoutBtn   = document.getElementById("logoutBtn");
+
+  const searchInput = document.getElementById("searchInput");
+  const searchBtn   = document.getElementById("searchBtn");
+  const searchMsg   = document.getElementById("searchMsg");
+  const previewBox  = document.getElementById("previewBox");
+  const prevImg     = document.getElementById("prevImg");
+  const prevTitle   = document.getElementById("prevTitle");
+  const prevMeta    = document.getElementById("prevMeta");
+  const prevPlot    = document.getElementById("prevPlot");
+  const addBtn      = document.getElementById("addBtn");
+
+  const filterType  = document.getElementById("filterType");
+  const sortBy      = document.getElementById("sortBy");
+  const itemsGrid   = document.getElementById("itemsGrid");
+
+  let apiKey = "";
+  let currentResult = null;
+  const items = [];
+
+  // ============ UI HELPERS ============
+  function showScreen(which) {
+    [loginScreen, apiScreen, appScreen].forEach(s => s.classList.remove("active"));
+    which.classList.add("active");
+  }
+
+  function msg(elem, text, positive = false) {
+    if (!text) {
+      elem.style.display = "none";
+      return;
+    }
+    elem.textContent = text;
+    elem.classList.remove("pos","neg");
+    elem.classList.add(positive ? "pos":"neg");
+    elem.style.display = "block";
+  }
+
+  // ============ PASSWORD STRENGTH ============
+  function checkPassword(pw) {
+    const errors = [];
+    if (pw.length < 8) errors.push("too short");
+    if (!/[A-Z]/.test(pw)) errors.push("need uppercase");
+    if (!/[a-z]/.test(pw)) errors.push("need lowercase");
+    if (!/[0-9]/.test(pw)) errors.push("need number");
+    if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(pw)) errors.push("need symbol");
+    const score = 5 - errors.length; // 0..5
+    return { valid: errors.length === 0, score, errors };
+  }
+
+  function updateStrength(pw) {
+    const { score } = checkPassword(pw);
+    const pct = (score / 5) * 100;
+    strengthFill.style.width = pct + "%";
+    strengthFill.className = "strength-fill";
+    if (!pw) return;
+    if (score <= 2) strengthFill.classList.add("strength-weak");
+    else if (score <= 4) strengthFill.classList.add("strength-medium");
+    else strengthFill.classList.add("strength-strong");
+  }
+
+  regPass.addEventListener("input", () => {
+    updateStrength(regPass.value);
+  });
+
+  pwToggle.addEventListener("click", () => {
+    if (regPass.type === "password") {
+      regPass.type = "text";
+      pwToggle.textContent = "🙈";
+    } else {
+      regPass.type = "password";
+      pwToggle.textContent = "👁️";
+    }
+  });
+
+  // ============ REGISTER ============
+  registerBtn.addEventListener("click", () => {
+    const u = regUser.value.trim();
+    const p = regPass.value;
+
+    if (!u || !p) {
+      msg(loginMsg, "Enter username and password.");
+      return;
+    }
+    const { valid, errors } = checkPassword(p);
+    if (!valid) {
+      msg(loginMsg, "Weak password: " + errors.join(", "));
+      return;
+    }
+
+    const users = loadUsers();
+    if (users.some(x => x.username === u)) {
+      msg(loginMsg, "Username already exists.");
+      return;
+    }
+
+    users.push({ username: u, password: p });
+    saveUsers(users);
+
+    msg(loginMsg, "Account created. You can now login.", true);
+    regUser.value = "";
+    regPass.value = "";
+    updateStrength("");
+  });
+
+  // ============ LOGIN ============
+  loginBtn.addEventListener("click", () => {
+    const u = loginUser.value.trim();
+    const p = loginPass.value;
+
+    if (!u || !p) {
+      msg(loginMsg, "Enter username and password.");
+      return;
+    }
+    const users = loadUsers();
+    const user = users.find(x => x.username === u && x.password === p);
+    if (!user) {
+      msg(loginMsg, "Wrong username or password.");
+      return;
+    }
+    msg(loginMsg, "");
+    setCurrentUser(u);
+    afterLogin();
+  });
+
+  // ============ AFTER LOGIN ============
+  // After pressing Login: ALWAYS go to API page (page 2)
+function afterLogin() {
+  const storedKey = localStorage.getItem("omdbApiKey") || "";
+  apiKey = storedKey;           // keep it in memory if it exists
+  apiKeyInput.value = storedKey; // pre-fill the box so user can see/change it
+  showScreen(apiScreen);        // always show API screen after login
+}
+
+
+  // ============ API KEY HANDLING ============
+  apiSaveBtn.addEventListener("click", async () => {
+    const key = apiKeyInput.value.trim();
+    if (!key) {
+      msg(apiMsg,"Please enter a key.");
+      return;
+    }
+    msg(apiMsg,"Checking key...");
+    try {
+      const res = await fetch(`https://www.omdbapi.com/?t=test&apikey=${key}`);
+      const data = await res.json();
+      if (data.Error && data.Error.includes("Invalid API key")) {
+        msg(apiMsg,"Invalid key. Make sure you activated it.");
+        return;
+      }
+      apiKey = key;
+      localStorage.setItem("omdbApiKey", key);
+      msg(apiMsg,"Key saved. Opening cinema…", true);
+      showScreen(appScreen);
+    } catch (e) {
+      msg(apiMsg,"Network error, try again.");
+    }
+  });
+
+  // ============ LOGOUT ============
+
+  logoutBtn.addEventListener("click", () => {
+    if (confirm("Logout and go back to login page?")) {
+      localStorage.removeItem("ws_current_user");
+      // we KEEP omdbApiKey so next login skips API screen if already set
+      showScreen(loginScreen);
+    }
+  });
+
+  // ============ SEARCH + COLLECTION ============
+  function showSearchMsg(text) { msg(searchMsg, text); }
+
+  async function doSearch() {
+    const q = searchInput.value.trim();
+    if (!q) {
+      showSearchMsg("Please type something to search.");
+      return;
+    }
+    if (!apiKey) {
+      showSearchMsg("Missing API key, go back and set it.");
+      return;
+    }
+    showSearchMsg("Searching…");
+    previewBox.style.display = "none";
+    try {
+      const res = await fetch(`https://www.omdbapi.com/?t=${encodeURIComponent(q)}&apikey=${apiKey}`);
+      const data = await res.json();
+      if (data.Response === "False") {
+        showSearchMsg(data.Error || "Not found.");
+        return;
+      }
+      showSearchMsg("");
+      currentResult = {
+        title: data.Title,
+        type: data.Type, // "movie" or "series"
+        year: data.Year,
+        released: data.Released,
+        rating: data.imdbRating === "N/A" ? null : parseFloat(data.imdbRating),
+        poster: data.Poster && data.Poster !== "N/A" ? data.Poster : null,
+        runtime: data.Runtime,
+        genre: data.Genre,
+        plot: data.Plot
+      };
+      renderPreview();
+    } catch (e) {
+      console.error(e);
+      showSearchMsg("Error contacting OMDb.");
+    }
+  }
+
+  function renderPreview() {
+    if (!currentResult) return;
+    previewBox.style.display = "block";
+    prevTitle.textContent = `${currentResult.title} (${currentResult.year})`;
+    prevMeta.textContent =
+      `${currentResult.type === "movie" ? "🎬 Movie" : "📺 Series"} · ` +
+      `${currentResult.released} · ${currentResult.runtime} · ${currentResult.genre}`;
+    prevPlot.textContent = currentResult.plot;
+    if (currentResult.poster) {
+      prevImg.src = currentResult.poster;
+    } else {
+      prevImg.src = "";
+      prevImg.style.background = "#333";
+    }
+  }
+
+  searchBtn.addEventListener("click", doSearch);
+  searchInput.addEventListener("keydown", e => {
+    if (e.key === "Enter") doSearch();
+  });
+
+  addBtn.addEventListener("click", () => {
+    if (!currentResult) return;
+    items.push({ ...currentResult, id: Date.now() });
+    previewBox.style.display = "none";
+    searchInput.value = "";
+    currentResult = null;
+    renderItems();
+  });
+
+  filterType.addEventListener("change", renderItems);
+  sortBy.addEventListener("change", renderItems);
+
+  function renderItems() {
+    let list = [...items];
+
+    const type = filterType.value;
+    if (type !== "all") {
+      list = list.filter(x => x.type === type);
+    }
+
+    const sort = sortBy.value;
+    if (sort === "title") {
+      list.sort((a,b) => a.title.localeCompare(b.title));
+    } else if (sort === "rating") {
+      list.sort((a,b) => (b.rating || 0) - (a.rating || 0));
+    } else if (sort === "date") {
+      list.sort((a,b) => new Date(b.released) - new Date(a.released));
+    }
+
+    if (!list.length) {
+      itemsGrid.innerHTML = `<div class="empty">No items yet. Search something and add it 🙂</div>`;
+      return;
+    }
+
+    itemsGrid.innerHTML = list.map(item => `
+      <div class="item">
+        ${item.poster
+          ? `<img class="item-img" src="${item.poster}" alt="${item.title}">`
+          : `<div class="item-img" style="display:flex;align-items:center;justify-content:center;">${item.title}</div>`
+        }
+        <div class="item-body">
+          <div class="tag ${item.type === "series" ? "series": ""}">
+            ${item.type === "movie" ? "🎬 Movie" : "📺 Series"}
+          </div>
+          <div class="title">${item.title}</div>
+          <div class="meta">
+            ${item.year} · ${item.runtime} · ${item.genre}
+          </div>
+          ${item.rating != null
+            ? `<div class="rating">⭐ ${item.rating.toFixed(1)}/10</div>`
+            : ""
+          }
+          <button class="del-btn" onclick="deleteItem(${item.id})">Delete</button>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  window.deleteItem = function(id) {
+    const idx = items.findIndex(x => x.id === id);
+    if (idx !== -1) {
+      items.splice(idx,1);
+      renderItems();
+    }
+  };
+
+  // ============ INITIAL ============
+  window.addEventListener("load", () => {
+    const user = getCurrentUser();
+    if (user) {
+      afterLogin();
+    } else {
+      showScreen(loginScreen);
+    }
+    renderItems();
+  });
+</script>
+</body>
+</html>
