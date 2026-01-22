@@ -1,6 +1,6 @@
 # Cinema Collection (OMDb)
 
-Live Demo: https://cinema-collection.netlify.app/
+Live Demo: [https://cinema-collection.netlify.app/](https://iis3d16.github.io/Cinema-Collection/)
 
 ## Overview
 A cinema library web app that uses the OMDb API to search movies/TV shows and manage a personal collection.
