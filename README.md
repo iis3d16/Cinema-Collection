@@ -21,10 +21,10 @@ This is a frontend-only demo project (no backend). Authentication is client-side
 ## Screenshots
 
 ### Login / Register
-![Login](assets/Screenshot 2026-01-22 085117.png)
+![Login](assets/1.png)
 
 ### OMDb API Validation
-![API Validation](assets/Screenshot-2026-01-22-084807.png)
+![API Validation](assets/3.png)
 
 ### Library
-![Library](assets/Screenshot-2026-01-22-085117.png)
+![Library](assets/5.png)
